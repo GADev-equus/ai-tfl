@@ -16,10 +16,20 @@ class HttpService {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     
+    // Get JWT token from localStorage (set by main site)
+    const token = localStorage.getItem('auth_token');
+    
+    const headers = { ...this.defaultHeaders, ...options.headers };
+    
+    // Add Authorization header if token exists
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
     const config = {
       method: 'GET',
-      headers: { ...this.defaultHeaders, ...options.headers },
-      credentials: 'include', // CRUCIAL: Always include cookies
+      headers,
+      credentials: 'include', // Still include for any other cookies
       ...options,
     };
 
