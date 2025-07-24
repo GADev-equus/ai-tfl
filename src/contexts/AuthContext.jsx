@@ -25,11 +25,33 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Step 1: Check for auth_token in URL (from main site)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('auth_token');
+        
+        if (urlToken) {
+          console.log('🔑 AI-TFL: Received JWT token from main site via URL');
+          
+          // Store token in localStorage for subsequent API calls
+          localStorage.setItem('auth_token', urlToken);
+          
+          // Remove token from URL for security (without refreshing page)
+          const newUrl = new URL(window.location);
+          newUrl.searchParams.delete('auth_token');
+          window.history.replaceState({}, document.title, newUrl);
+          
+          console.log('🔒 AI-TFL: Token stored and removed from URL');
+        }
+        
+        // Step 2: Validate authentication (token will be sent via Authorization header)
         const response = await httpService.get('/api/auth/validate-token');
         
         if (response.success && response.user) {
           setUser(response.user);
           setIsAuthenticated(true);
+          console.log('✅ AI-TFL: Authentication successful');
+        } else {
+          console.log('❌ AI-TFL: Authentication validation failed');
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
@@ -48,6 +70,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Clear stored token
+      localStorage.removeItem('auth_token');
       setUser(null);
       setIsAuthenticated(false);
       // Redirect to main site

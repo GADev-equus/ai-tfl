@@ -16,12 +16,18 @@ class HttpService {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     
-    // Authentication is handled via HTTP-only cookies with domain='.equussystems.co'
-    // These cookies are automatically sent with all requests to the API
-    // No need to manually add Authorization headers - cookies handle everything
-    console.log('🍪 AI-TFL httpService - Using cookie-based authentication');
+    // Get JWT token from localStorage (set by URL parameter from main site)
+    const token = localStorage.getItem('auth_token');
     
     const headers = { ...this.defaultHeaders, ...options.headers };
+    
+    // Add Authorization header if token exists
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+      console.log('🔑 AI-TFL httpService - Using JWT token from localStorage');
+    } else {
+      console.log('❌ AI-TFL httpService - No token found in localStorage');
+    }
     
     const config = {
       method: 'GET',
