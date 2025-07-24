@@ -44,7 +44,8 @@ export const AuthProvider = ({ children }) => {
         }
         
         // Step 2: Validate authentication (token will be sent via Authorization header)
-        const response = await httpService.get('/api/auth/validate-token');
+        // Add timestamp to bypass browser cache
+        const response = await httpService.get(`/api/auth/validate-token?t=${Date.now()}`);
         
         if (response.success && response.user) {
           setUser(response.user);
