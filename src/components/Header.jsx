@@ -13,9 +13,11 @@ import {
   User,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useConversation } from '../contexts/ConversationContext';
 
 export default function Header({ className = '' }) {
   const { user, isAuthenticated, logout } = useAuth();
+  const { clearAllConversations } = useConversation();
   const navigate = useNavigate();
   const location = useLocation();
   const [connectionStatus, setConnectionStatus] = useState('connected'); // Simplified for TFL
@@ -31,6 +33,11 @@ export default function Header({ className = '' }) {
         break;
       case 'chat':
         navigate('/chat');
+        break;
+      case 'newChat':
+        clearAllConversations();
+        // After clearing, take user back to home page to see TFL status
+        navigate('/');
         break;
       case 'about':
         navigate('/about');
@@ -152,13 +159,23 @@ export default function Header({ className = '' }) {
                   </button>
 
                   {isAuthenticated && (
-                    <button
-                      onClick={() => handleMenuAction('chat')}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-gray-700 hover:text-white transition-colors"
-                    >
-                      <MessageSquarePlus className="w-4 h-4" />
-                      <span className="font-medium">TFL Chat</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleMenuAction('chat')}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-gray-700 hover:text-white transition-colors"
+                      >
+                        <MessageSquarePlus className="w-4 h-4" />
+                        <span className="font-medium">TFL Chat</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleMenuAction('newChat')}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-gray-700 hover:text-white transition-colors"
+                      >
+                        <MessageSquarePlus className="w-4 h-4" />
+                        <span className="font-medium">New Conversation</span>
+                      </button>
+                    </>
                   )}
 
                   <button
