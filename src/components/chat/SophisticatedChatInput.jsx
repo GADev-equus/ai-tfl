@@ -4,10 +4,13 @@ import {
   Loader2,
   Lightbulb,
   X,
+  Mic,
+  MicOff,
   Zap,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import useSpeechRecognition from '../../hooks/useSpeechRecognition';
 import { useConversation } from '../../contexts/ConversationContext';
 import { tflApi } from '../../services/tflApi';
 import ConfirmationDialog from './ConfirmationDialog';
@@ -33,6 +36,30 @@ export default function SophisticatedChatInput() {
     isLoading,
   } = useConversation();
 
+  // Speech recognition hook - using Web Speech API with enhanced pause detection
+  const {
+    transcript,
+    listening,
+    isLoading: speechLoading,
+    error: speechError,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable,
+    startListening: speechStart,
+    stopListening: speechStop,
+    resetTranscript,
+  } = useSpeechRecognition({
+    pauseDelay: 2500, // 2.5 seconds - gives users time to continue speaking
+    enablePauseDetection: true, // Enable the improved pause detection
+  });
+
+  // Handle speech recognition errors - only log, don't set error to prevent loops
+  useEffect(() => {
+    if (speechError) {
+      console.error('Speech recognition error:', speechError);
+      // Don't set global error state to prevent error loops
+    }
+  }, [speechError]);
+
   // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
@@ -50,12 +77,19 @@ export default function SophisticatedChatInput() {
       window.removeEventListener('setInputMessage', handleSetInputMessage);
   }, []);
 
-  // Example questions organized by category
-  const exampleQuestions = {
+  // Update message when transcript changes
+  useEffect(() => {
+    if (transcript && listening) {
+      setMessage(transcript);
+    }
+  }, [transcript, listening]);
+
+  // Example suggestions organized by category
+  const exampleSuggestions = {
     'Line Status': [
-      'Circle line current status',
-      'Bakerloo line disruptions today',
-      'What is the status of District line?',
+      "What's the current status of the Circle line?",
+      'Is the District line running normally?',
+      'Any service updates for Bakerloo line?',
       'Central line service status',
     ],
     Disruptions: [
@@ -84,6 +118,28 @@ export default function SophisticatedChatInput() {
     inputRef.current?.focus();
   };
 
+  // Speech recognition handlers
+  const startListening = async () => {
+    if (!browserSupportsSpeechRecognition) {
+      // Show a temporary notification instead of setting global error
+      console.warn('Speech recognition is not supported in this browser');
+      return;
+    }
+    if (!isMicrophoneAvailable) {
+      // Show a temporary notification instead of setting global error
+      console.warn(
+        'Microphone access is not available. Please check your permissions.',
+      );
+      return;
+    }
+    resetTranscript();
+    await speechStart({ continuous: true });
+  };
+
+  const stopListening = () => {
+    speechStop();
+  };
+
   // Responsive placeholder text
   const getPlaceholderText = () => {
     if (typeof window !== 'undefined' && window.innerWidth < 640) {
@@ -102,64 +158,84 @@ export default function SophisticatedChatInput() {
     const userMessage = message.trim();
     setMessage('');
     setIsSending(true);
+    setError(null);
 
-    // Add user message immediately
+    // Clear transcript and stop listening if voice recognition was used
+    if (listening) {
+      stopListening();
+    }
+    resetTranscript();
+
+    // Add user message to conversation first
     addMessage({
       role: 'user',
       content: userMessage,
       timestamp: new Date().toISOString(),
     });
 
-    // Determine whether to use streaming mode
-    const shouldStream = useStreamingMode || detectComplexQuery(userMessage);
+    // Check if we should use streaming mode for this query
+    const shouldStream = useStreamingMode || shouldUseStreamingForQuery(userMessage);
 
     if (shouldStream) {
-      await handleStreamingSubmit(userMessage);
+      return handleStreamingSubmit(userMessage);
     } else {
-      await handleRegularSubmit(userMessage);
+      return handleRegularSubmit(userMessage);
     }
   };
 
-  // Detect complex queries that benefit from streaming
-  const detectComplexQuery = (query) => {
-    const complexPatterns = [
-      /journey from .+ to/i,
-      /plan.*route/i,
-      /how to get from/i,
-      /best way to/i,
-      /compare/i,
-      /multiple lines/i,
-      /all lines/i,
-      /network status/i,
+  // Helper to determine if query should use streaming
+  const shouldUseStreamingForQuery = (query) => {
+    const streamingKeywords = [
+      'journey from',
+      'travel from',
+      'route from',
+      'plan journey',
+      'multiple lines',
+      'network status',
+      'compare',
+      'alternative',
     ];
-    return complexPatterns.some(pattern => pattern.test(query));
+
+    const queryLower = query.toLowerCase();
+    return streamingKeywords.some((keyword) => queryLower.includes(keyword));
   };
 
-  // Handle streaming submission with workflow progress
+  // Handle streaming submission
   const handleStreamingSubmit = async (userMessage) => {
     try {
-      console.log('Starting streaming mode for:', userMessage);
-      
+      // User message already added in handleSubmit
       setIsStreaming(true);
-      setLoading(true);
+      setStreamingData({ currentStep: 'input_validation', agent: null });
       setTypingIndicator(true);
+      setLoading(true);
 
-      // Create event source for streaming
-      const eventSource = tflApi.streamMessage(userMessage, threadId, {});
+      // Create streaming connection
+      const eventSource = await tflApi.streamMessage(userMessage, threadId);
 
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('Streaming data received:', data);
 
-          // Update streaming progress
+          if (data.done) {
+            // Streaming complete
+            setIsStreaming(false);
+            setStreamingData(null);
+            eventSource.close();
+            return;
+          }
+
+          if (data.error) {
+            throw new Error(data.message);
+          }
+
+          // Update streaming indicator
           setStreamingData({
-            step: data.step,
+            currentStep: data.step,
             agent: data.agent,
             partialResponse: data.partialResponse,
           });
 
-          // If we have a final response, add it
+          // If we have a partial response, show it
           if (data.partialResponse && data.step === 'finalize_response') {
             addMessage({
               role: 'assistant',
@@ -168,18 +244,6 @@ export default function SophisticatedChatInput() {
               streaming: true,
               timestamp: data.metadata?.timestamp || new Date().toISOString(),
             });
-            
-            // Update active agent
-            if (data.agent) {
-              setActiveAgent(data.agent);
-            }
-          }
-
-          // Check if streaming is complete
-          if (data.done) {
-            setIsStreaming(false);
-            setStreamingData(null);
-            eventSource.close();
           }
         } catch (parseError) {
           console.error('Error parsing streaming data:', parseError);
@@ -207,6 +271,8 @@ export default function SophisticatedChatInput() {
       setIsSending(false);
       setLoading(false);
       setTypingIndicator(false);
+      // Ensure transcript is fully cleared after response
+      resetTranscript();
     }
   };
 
@@ -286,6 +352,8 @@ export default function SophisticatedChatInput() {
       setIsSending(false);
       setLoading(false);
       setTypingIndicator(false);
+      // Ensure transcript is fully cleared after response
+      resetTranscript();
     }
   };
 
@@ -326,6 +394,8 @@ export default function SophisticatedChatInput() {
       setPendingConfirmation(null);
       setLoading(false);
       setTypingIndicator(false);
+      // Ensure transcript is fully cleared after response
+      resetTranscript();
     }
   };
 
@@ -371,67 +441,203 @@ export default function SophisticatedChatInput() {
         onCancel={() => handleConfirmation(false)}
       />
 
-      {/* Example Questions */}
+      {/* Examples Modal */}
       {showExamples && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-4 max-h-96 overflow-y-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Example Questions</h3>
-            <button
-              onClick={() => setShowExamples(false)}
-              className="text-gray-400 hover:text-gray-200"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
-          {Object.entries(exampleQuestions).map(([category, questions]) => (
-            <div key={category} className="mb-4">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">{category}</h4>
-              <div className="grid gap-2">
-                {questions.map((question, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleExampleClick(question)}
-                    className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-md text-sm text-gray-200 transition-colors"
-                  >
-                    {question}
-                  </button>
-                ))}
-              </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-3 pt-12 sm:p-6">
+          <div className="bg-gray-800  w-full sm:max-w-3xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-600 bg-gray-700">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-100">
+                Example Questions
+              </h3>
+              <button
+                onClick={() => setShowExamples(false)}
+                className="p-1.5 hover:bg-gray-600 rounded-md transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-300" />
+              </button>
             </div>
-          ))}
+
+            {/* Modal Content */}
+            <div
+              className="p-4 sm:p-5 overflow-y-auto"
+              style={{ maxHeight: 'calc(85vh - 80px)' }}
+            >
+              {Object.entries(exampleSuggestions).map(
+                ([category, suggestions]) => (
+                  <div key={category} className="mb-6 last:mb-2">
+                    <h4 className="text-sm font-medium text-gray-300 mb-3 px-1 uppercase tracking-wide">
+                      {category}
+                    </h4>
+                    <div className="space-y-2">
+                      {suggestions.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleExampleClick(suggestion)}
+                          className="w-full text-left p-4 text-sm sm:text-base bg-gray-700 hover:bg-gray-600 rounded-md transition-colors border border-gray-600 hover:border-gray-500 hover:shadow-sm text-gray-100"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Chat Input */}
+      {/* Compact Input Area */}
       <div className="bg-gray-800 border-t border-gray-700 p-3 sm:p-4 flex-shrink-0">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="flex gap-2 sm:gap-3">
-            {/* Example Questions Button */}
-            <button
-              type="button"
-              disabled={isDisabled}
-              onClick={() => setShowExamples(!showExamples)}
-              className="flex-shrink-0 p-2 sm:p-3 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded-md transition-colors disabled:opacity-50 border border-gray-600 hover:border-gray-500"
-              title="Show example questions"
-            >
-              <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+          {/* Mobile: Collapsible Actions Row - Above input */}
+          <div
+            className={`sm:hidden mb-3 transition-all duration-300 overflow-hidden ${
+              showMobileActions
+                ? 'max-h-[60px] opacity-100'
+                : 'max-h-0 opacity-0'
+            }`}
+          >
+            <div className="flex gap-4 justify-center px-4">
+              <button
+                type="button"
+                onClick={() => setShowExamples(true)}
+                disabled={isDisabled}
+                className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 border border-gray-600 hover:border-gray-500"
+                title="Show example questions"
+              >
+                <Lightbulb className="w-5 h-5" />
+              </button>
 
-            {/* Streaming Mode Toggle */}
-            <button
-              type="button"
-              disabled={isDisabled}
-              onClick={() => setUseStreamingMode(!useStreamingMode)}
-              className={`flex-shrink-0 p-2 sm:p-3 rounded-md transition-colors disabled:opacity-50 border ${
-                useStreamingMode 
-                  ? 'text-blue-400 bg-blue-900/20 border-blue-500 hover:bg-blue-900/30' 
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700 border-gray-600 hover:border-gray-500'
-              }`}
-              title="Toggle streaming mode for complex queries"
-            >
-              <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+              {browserSupportsSpeechRecognition && (
+                <button
+                  type="button"
+                  onClick={listening ? stopListening : startListening}
+                  disabled={isDisabled || speechLoading}
+                  className={`flex-shrink-0 p-3 rounded-lg transition-colors disabled:opacity-50 border ${
+                    listening
+                      ? 'text-red-400 bg-red-900 border-red-600 hover:bg-red-800 animate-pulse'
+                      : speechLoading
+                      ? 'text-blue-400 bg-blue-900 border-blue-600'
+                      : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700 border-gray-600 hover:border-gray-500'
+                  }`}
+                  title={
+                    speechLoading
+                      ? 'Loading speech recognition...'
+                      : listening
+                      ? 'Stop listening'
+                      : 'Start voice input'
+                  }
+                >
+                  {speechLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : listening ? (
+                    <MicOff className="w-5 h-5" />
+                  ) : (
+                    <Mic className="w-5 h-5" />
+                  )}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setUseStreamingMode(!useStreamingMode)}
+                disabled={isDisabled}
+                className={`flex-shrink-0 p-3 rounded-lg transition-colors disabled:opacity-50 border ${
+                  useStreamingMode
+                    ? 'text-blue-400 bg-blue-900 border-blue-600 hover:bg-blue-800'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700 border-gray-600 hover:border-gray-500'
+                }`}
+                title={
+                  useStreamingMode
+                    ? 'Disable streaming mode'
+                    : 'Enable streaming mode'
+                }
+              >
+                <Zap className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex gap-2 sm:gap-3">
+            {/* Mobile: Toggle Button */}
+            <div className="sm:hidden">
+              <button
+                type="button"
+                onClick={() => setShowMobileActions(!showMobileActions)}
+                disabled={isDisabled}
+                className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded-md transition-colors disabled:opacity-50 border border-gray-600 hover:border-gray-500"
+                title="Toggle quick actions"
+              >
+                {showMobileActions ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+
+            {/* Desktop: All buttons visible */}
+            <div className="hidden sm:flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowExamples(true)}
+                disabled={isDisabled}
+                className="flex-shrink-0 p-2 sm:p-3 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded-md transition-colors disabled:opacity-50 border border-gray-600 hover:border-gray-500"
+                title="Show example questions"
+              >
+                <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+
+              {browserSupportsSpeechRecognition && (
+                <button
+                  type="button"
+                  onClick={listening ? stopListening : startListening}
+                  disabled={isDisabled || speechLoading}
+                  className={`flex-shrink-0 p-2 sm:p-3 rounded-md transition-colors disabled:opacity-50 border ${
+                    listening
+                      ? 'text-red-400 bg-red-900 border-red-600 hover:bg-red-800 animate-pulse'
+                      : speechLoading
+                      ? 'text-blue-400 bg-blue-900 border-blue-600'
+                      : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700 border-gray-600 hover:border-gray-500'
+                  }`}
+                  title={
+                    speechLoading
+                      ? 'Loading speech recognition...'
+                      : listening
+                      ? 'Stop listening'
+                      : 'Start voice input'
+                  }
+                >
+                  {speechLoading ? (
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                  ) : listening ? (
+                    <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />
+                  ) : (
+                    <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+                  )}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setUseStreamingMode(!useStreamingMode)}
+                disabled={isDisabled}
+                className={`flex-shrink-0 p-2 sm:p-3 rounded-md transition-colors disabled:opacity-50 border ${
+                  useStreamingMode
+                    ? 'text-blue-400 bg-blue-900 border-blue-600 hover:bg-blue-800'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700 border-gray-600 hover:border-gray-500'
+                }`}
+                title={
+                  useStreamingMode
+                    ? 'Disable streaming mode'
+                    : 'Enable streaming mode'
+                }
+              >
+                <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
 
             {/* Input Field */}
             <div className="flex-1">
@@ -441,12 +647,12 @@ export default function SophisticatedChatInput() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={getPlaceholderText()}
-                className="textarea-field min-h-[64px] sm:min-h-[72px] max-h-[120px] resize-none text-sm sm:text-base bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+                className="textarea-field min-h-[64px] sm:min-h-[72px] max-h-[120px] resize-none text-sm sm:text-base bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 flex items-center justify-center text-center"
                 disabled={isDisabled}
                 rows={2}
                 style={{
                   height: 'auto',
-                  minHeight: typeof window !== 'undefined' && window.innerWidth < 640 ? '64px' : '72px',
+                  minHeight: window.innerWidth < 640 ? '64px' : '72px',
                 }}
                 onInput={(e) => {
                   e.target.style.height = 'auto';
@@ -470,7 +676,7 @@ export default function SophisticatedChatInput() {
                 }
               `}
             >
-              {isLoading || isSending ? (
+              {isSending ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
               ) : (
                 <Send className="w-4 h-4 sm:w-5 sm:h-5" />

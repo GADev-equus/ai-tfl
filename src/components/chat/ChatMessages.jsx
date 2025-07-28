@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, ArrowDown, RefreshCw } from 'lucide-react';
-import ChatMessage from './ChatMessage';
+import SophisticatedChatMessage from './SophisticatedChatMessage';
 import LineStatusBlock from './LineStatusBlock';
 import { useConversation } from '../../contexts/ConversationContext';
 import './ChatMessages.css';
@@ -39,7 +39,7 @@ export default function ChatMessages() {
         block: 'end',
       });
     }
-  }, [messages]);
+  }, [messages, isTyping]);
 
   // Track scroll position
   useEffect(() => {
@@ -292,7 +292,7 @@ export default function ChatMessages() {
 
       {/* Messages */}
       {messages.map((message, index) => (
-        <ChatMessage key={message.id || index} message={message} />
+        <SophisticatedChatMessage key={message.id || index} message={message} />
       ))}
 
       {/* Loading indicator */}
