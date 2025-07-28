@@ -1,30 +1,43 @@
 /**
  * Main App Component for AI TFL Subdomain
- * Integrates authentication with routing
+ * Integrates authentication with TFL chat functionality
+ * Following migration pattern: selective route protection, not wrapping entire app
  */
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import AuthGuard from './components/AuthGuard.jsx';
 import HomePage from './pages/HomePage.jsx';
-import ProtectedPage from './pages/ProtectedPage.jsx';
+import AboutPage from './pages/AboutPage.jsx';
+import ChatPage from './pages/ChatPage.jsx';
 import './App.css';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="app">
+        <div className="app min-vh-100">
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
             
             {/* Protected routes */}
+            <Route 
+              path="/chat" 
+              element={
+                <AuthGuard>
+                  <ChatPage />
+                </AuthGuard>
+              } 
+            />
+            
+            {/* Legacy dashboard route - redirect to chat */}
             <Route 
               path="/dashboard" 
               element={
                 <AuthGuard>
-                  <ProtectedPage />
+                  <ChatPage />
                 </AuthGuard>
               } 
             />
