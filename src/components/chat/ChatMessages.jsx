@@ -3,6 +3,7 @@ import { Loader2, ArrowDown, RefreshCw } from 'lucide-react';
 import SophisticatedChatMessage from './SophisticatedChatMessage';
 import LineStatusBlock from './LineStatusBlock';
 import { useConversation } from '../../contexts/ConversationContext';
+import { tflService } from '../../services/tflService';
 import './ChatMessages.css';
 
 export default function ChatMessages() {
@@ -72,25 +73,56 @@ export default function ChatMessages() {
     );
   };
 
-  // Simplified status functions for visual display
+  // Fetch real TFL status data
+  const fetchTflStatus = async () => {
+    setIsRefreshing(true);
+    try {
+      const statuses = await tflService.getTubeStatus();
+      setLineStatuses(statuses);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Failed to fetch TFL status:', error);
+      // Keep existing data if fetch fails
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Load TFL status on component mount
+  useEffect(() => {
+    fetchTflStatus();
+  }, []);
+
+  // Get line status from fetched data
   const getLineStatus = (lineId) => {
-    return 'Good Service'; // Simplified - visual only
+    const lineStatus = lineStatuses.find(line => line.id === lineId);
+    return lineStatus?.status || 'Good Service';
   };
 
+  // Get status styling based on severity
   const getStatusStyling = (lineId) => {
-    return 'text-white font-normal bg-transparent border border-white/20 shadow-none opacity-70';
+    const lineStatus = lineStatuses.find(line => line.id === lineId);
+    const severity = lineStatus?.statusSeverity || 10;
+    
+    // TFL severity levels: 10 = Good Service, lower numbers = more severe
+    if (severity >= 10) {
+      return 'text-white font-normal bg-transparent border border-white/20 shadow-none opacity-70';
+    } else if (severity >= 6) {
+      return 'text-yellow-200 font-medium bg-yellow-900/20 border border-yellow-600/30 shadow-sm opacity-90';
+    } else {
+      return 'text-red-200 font-medium bg-red-900/20 border border-red-600/30 shadow-sm opacity-100 animate-pulse';
+    }
   };
 
+  // Check if line should pulsate (for severe disruptions)
   const getIsPulsating = (lineId) => {
-    return false; // Simplified - visual only
+    const lineStatus = lineStatuses.find(line => line.id === lineId);
+    const severity = lineStatus?.statusSeverity || 10;
+    return severity < 6; // Pulsate for severe disruptions
   };
 
   const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      setLastUpdated(new Date());
-    }, 1000);
+    fetchTflStatus();
   };
 
   // Show welcome message if no messages
