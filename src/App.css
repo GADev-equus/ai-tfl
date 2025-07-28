@@ -1,30 +1,127 @@
-.app {
-  font-family: 'AquireLight', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, sans-serif;
+/* App-specific styles */
+.App {
   min-height: 100vh;
-  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Ensure proper scrolling for chat */
+html,
+body,
+#root {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: auto; /* Allow body scrolling */
+}
+
+/* Custom scrollbar for webkit browsers */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #374151;
+  }
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  }
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Animation for chat messages */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Enhanced focus styles for better accessibility */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+.focus-visible {
+  outline: 3px solid #60a5fa;
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* High contrast focus for mobile */
+@media (max-width: 640px) {
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible {
+    outline-width: 4px;
+    outline-color: #fbbf24;
+  }
+}
+
+/* Improve touch feedback */
+button:active,
+.active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* Better disabled states */
+button:disabled,
+input:disabled,
+textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading states */
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Page styling */
 .page {
+  flex: 1;
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
+  color: #e5e7eb;
 }
 
-h1 {
-  color: #2563eb;
+.page h1 {
+  color: #60a5fa;
   margin-bottom: 1rem;
   font-size: 2.5rem;
 }
 
-h2 {
-  color: #1f2937;
+.page h2 {
+  color: #e5e7eb;
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
 }
 
-p {
-  color: #6b7280;
+.page p {
+  color: #9ca3af;
   font-size: 1.1rem;
   line-height: 1.6;
 }
@@ -32,26 +129,26 @@ p {
 .auth-status {
   margin: 2rem 0;
   padding: 2rem;
-  background: #f9fafb;
+  background: #374151;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #4b5563;
 }
 
 .user-info {
   margin: 2rem 0;
   padding: 1.5rem;
-  background: #f0f9ff;
+  background: #1e3a8a;
   border-radius: 8px;
-  border: 1px solid #bae6fd;
+  border: 1px solid #3b82f6;
   text-align: left;
 }
 
 .tutor-features {
   margin: 2rem 0;
   padding: 1.5rem;
-  background: #f0fdf4;
+  background: #1f2937;
   border-radius: 8px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid #374151;
   text-align: left;
 }
 
@@ -62,7 +159,7 @@ p {
 
 .tutor-features li {
   margin: 0.5rem 0;
-  color: #374151;
+  color: #e5e7eb;
 }
 
 .login-link, .logout-btn {
@@ -89,10 +186,11 @@ p {
   align-items: center;
   justify-content: center;
   min-height: 200px;
+  color: #e5e7eb;
 }
 
 .auth-guard-unauthorized {
   text-align: center;
   padding: 2rem;
-  color: #dc2626;
+  color: #ef4444;
 }

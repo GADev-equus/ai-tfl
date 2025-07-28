@@ -8,13 +8,11 @@ import { TFLChatProvider } from '../context/TFLChatContext';
 const ChatPage = () => {
   return (
     <TFLChatProvider>
-      <div className="container-fluid py-4" style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-        <div className="row justify-content-center">
-          <div className="col-lg-10 col-xl-8">
-            <TFLChatInterface />
-          </div>
+      <main className="flex-1 flex flex-col overflow-auto">
+        <div className="flex-1 overflow-auto">
+          <TFLChatInterface />
         </div>
-      </div>
+      </main>
     </TFLChatProvider>
   );
 };

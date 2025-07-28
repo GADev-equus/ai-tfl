@@ -7,6 +7,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import AuthGuard from './components/AuthGuard.jsx';
+import Header from './components/Header.jsx';
+import Footer from './components/Footer.jsx';
 import HomePage from './pages/HomePage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 import ChatPage from './pages/ChatPage.jsx';
@@ -16,7 +18,11 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="app min-vh-100">
+        <div 
+          className="h-screen overflow-auto flex flex-col"
+          style={{ background: 'black' }}
+        >
+          <Header />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
@@ -45,6 +51,7 @@ function App() {
             {/* Catch all route - redirect to home */}
             <Route path="*" element={<HomePage />} />
           </Routes>
+          <Footer />
         </div>
       </Router>
     </AuthProvider>

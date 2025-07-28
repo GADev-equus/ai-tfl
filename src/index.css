@@ -1,68 +1,322 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  html {
+    font-size: 16px; /* Base font size for better mobile readability */
+    scroll-behavior: smooth;
+    background: black;
   }
-  a:hover {
-    color: #747bff;
+
+  body {
+    @apply font-sans antialiased;
+    background: black;
+    color: #e5e7eb;
+    font-size: 1rem; /* 16px base */
+    line-height: 1.6; /* Improved line spacing */
   }
-  button {
-    background-color: #f9f9f9;
+
+  /* Responsive typography scaling */
+  @media (max-width: 640px) {
+    html {
+      font-size: 15px; /* Slightly smaller on very small screens */
+    }
+  }
+
+  @media (min-width: 768px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      font-size: 17px; /* Slightly larger on desktop */
+    }
+  }
+}
+
+@layer components {
+  /* TFL Line Themed Components */
+  .line-circle {
+    @apply bg-circle text-black;
+  }
+
+  .line-bakerloo {
+    @apply bg-bakerloo text-white;
+  }
+
+  .line-district {
+    @apply bg-district text-white;
+  }
+
+  .line-central {
+    @apply bg-central text-white;
+  }
+
+  .line-northern {
+    @apply bg-northern text-white;
+  }
+
+  .line-piccadilly {
+    @apply bg-piccadilly text-white;
+  }
+
+  .line-victoria {
+    @apply bg-victoria text-white;
+  }
+
+  .line-jubilee {
+    @apply bg-jubilee text-white;
+  }
+
+  .line-metropolitan {
+    @apply bg-metropolitan text-white;
+  }
+
+  .line-hammersmith-city {
+    @apply bg-hammersmith-city text-black;
+  }
+
+  .line-waterloo-city {
+    @apply bg-waterloo-city text-black;
+  }
+
+  .line-elizabeth {
+    @apply bg-elizabeth text-white;
+  }
+
+  .line-status {
+    @apply bg-gray-600 text-white;
+  }
+
+  /* Chat Components - Enhanced mobile-first */
+  .chat-message {
+    @apply p-4 max-w-3xl animate-slide-up;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .chat-message.user {
+    @apply bg-primary-500 text-white ml-auto;
+  }
+
+  .chat-message.assistant {
+    @apply bg-gray-800 border border-gray-700 shadow-sm text-gray-100;
+  }
+
+  .chat-message.circle {
+    @apply bg-circle/10 border-circle/20;
+  }
+
+  .chat-message.bakerloo {
+    @apply bg-bakerloo/10 border-bakerloo/20;
+  }
+
+  .chat-message.district {
+    @apply bg-district/10 border-district/20;
+  }
+
+  .chat-message.central {
+    @apply bg-central/10 border-central/20;
+  }
+
+  .chat-message.northern {
+    @apply bg-northern/10 border-northern/20;
+  }
+
+  .chat-message.piccadilly {
+    @apply bg-piccadilly/10 border-piccadilly/20;
+  }
+
+  .chat-message.victoria {
+    @apply bg-victoria/10 border-victoria/20;
+  }
+
+  .chat-message.jubilee {
+    @apply bg-jubilee/10 border-jubilee/20;
+  }
+
+  .chat-message.metropolitan {
+    @apply bg-metropolitan/10 border-metropolitan/20;
+  }
+
+  .chat-message.hammersmith_city {
+    @apply bg-hammersmith-city/10 border-hammersmith-city/20;
+  }
+
+  .chat-message.waterloo_city {
+    @apply bg-waterloo-city/10 border-waterloo-city/20;
+  }
+
+  .chat-message.elizabeth {
+    @apply bg-elizabeth/10 border-elizabeth/20;
+  }
+
+  .chat-message.status {
+    @apply bg-gray-600/10 border-gray-600/20;
+  }
+
+  /* Status Indicators */
+  .status-good {
+    @apply bg-green-100 text-green-800 border-green-200;
+  }
+
+  .status-minor {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+  }
+
+  .status-severe {
+    @apply bg-red-100 text-red-800 border-red-200;
+  }
+
+  /* Button Variants - Enhanced mobile-first */
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold px-5 py-3 transition-all duration-200 shadow-md hover:shadow-lg;
+    min-height: 44px;
+    border-radius: 0.5rem;
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold px-5 py-3 transition-all duration-200 shadow-md hover:shadow-lg;
+    min-height: 44px;
+    border-radius: 0.5rem;
+  }
+
+  .btn-secondary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-circle {
+    @apply bg-circle hover:bg-circle-dark text-black font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-bakerloo {
+    @apply bg-bakerloo hover:bg-bakerloo-dark text-white font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-district {
+    @apply bg-district hover:bg-district-dark text-white font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-central {
+    @apply bg-central hover:bg-central-dark text-white font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-northern {
+    @apply bg-northern hover:bg-northern-dark text-white font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-piccadilly {
+    @apply bg-piccadilly hover:bg-piccadilly-dark text-white font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-victoria {
+    @apply bg-victoria hover:bg-victoria-dark text-white font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-jubilee {
+    @apply bg-jubilee hover:bg-jubilee-dark text-white font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-metropolitan {
+    @apply bg-metropolitan hover:bg-metropolitan-dark text-white font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-hammersmith-city {
+    @apply bg-hammersmith-city hover:bg-hammersmith-city-dark text-black font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-waterloo-city {
+    @apply bg-waterloo-city hover:bg-waterloo-city-dark text-black font-medium px-4 py-2  transition-colors;
+  }
+
+  .btn-elizabeth {
+    @apply bg-elizabeth hover:bg-elizabeth-dark text-white font-medium px-4 py-2  transition-colors;
+  }
+
+  /* Form Components - Improved mobile touch targets */
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-600 focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-700 text-gray-100;
+    font-size: 1rem;
+    line-height: 1.5;
+    min-height: 44px; /* Accessibility touch target */
+  }
+
+  .textarea-field {
+    @apply w-full px-4 py-3 border border-gray-600 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none bg-gray-700 text-gray-100;
+    font-size: 1rem;
+    line-height: 1.6;
+    min-height: 44px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mobile-first touch optimizations */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .tap-highlight-none {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  /* Enhanced mobile loading state */
+  .loading-skeleton {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+  }
+
+  @keyframes skeleton-loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Mobile interaction feedback */
+  .mobile-press {
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .mobile-press:active {
+    transform: scale(0.97);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Better mobile contrast */
+  @media (max-width: 640px) {
+    .mobile-high-contrast {
+      filter: contrast(1.1) brightness(1.05);
+    }
   }
 }
