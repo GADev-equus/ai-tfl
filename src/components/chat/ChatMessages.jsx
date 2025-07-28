@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, ArrowDown, RefreshCw } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import LineStatusBlock from './LineStatusBlock';
-import { useTFLChat } from '../../context/TFLChatContext';
+import { useConversation } from '../../contexts/ConversationContext';
 import './ChatMessages.css';
 
 export default function ChatMessages() {
-  const { messages, loading, error } = useTFLChat();
+  const { messages, isLoading, error, isTyping } = useConversation();
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -94,7 +94,7 @@ export default function ChatMessages() {
   };
 
   // Show welcome message if no messages
-  if (messages.length === 0 && !loading) {
+  if (messages.length === 0 && !isLoading) {
     return (
       <div
         className="flex-1 overflow-y-auto overflow-x-hidden"
@@ -296,7 +296,7 @@ export default function ChatMessages() {
       ))}
 
       {/* Loading indicator */}
-      {loading && (
+      {(isLoading || isTyping) && (
         <div className="flex gap-2 sm:gap-3 justify-start">
           <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-gray-600 text-gray-300 flex items-center justify-center">
             <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />

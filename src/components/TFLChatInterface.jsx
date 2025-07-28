@@ -1,29 +1,17 @@
 /**
- * TFL Chat Interface component with new visual styling
- * Preserves all existing functionality while using new UI components
+ * TFL Chat Interface component using sophisticated multi-agent system
+ * Integrates with ConversationContext and TFLContext for advanced features
  */
 import ChatMessages from './chat/ChatMessages';
-import ChatInput from './chat/ChatInput';
-import { useTFLChat } from '../context/TFLChatContext';
+import SophisticatedChatInput from './chat/SophisticatedChatInput';
 
 const TFLChatInterface = () => {
-  const {
-    messages,
-    loading,
-    sendMessage,
-    clearChat,
-    threadId,
-    currentAgent,
-    lineColor,
-    error,
-  } = useTFLChat();
-
   return (
     <main className="flex-1 flex flex-col overflow-auto">
       <div className="flex-1 overflow-auto">
         <ChatMessages />
       </div>
-      <ChatInput onSendMessage={sendMessage} isLoading={loading} />
+      <SophisticatedChatInput />
     </main>
   );
 };
